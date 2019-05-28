@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jt.order.mapper.OrderMapper">
+<insert id="saveOrder" parameterType="Order">
+<!--mysql是否支持多个insert语句同时执行-->
+insert into tb_order (order_id,payment,payment_type,post_fee,status,payment_time,consign_time,end_time,close_time,shipping_name,shipping_code,user_id,buyer_message,buyer_nick,buyer_rate,created,updated) 
+values(#{orderId},#{payment},#{paymentType},#{postFee},#{status},#{paymentTime},#{consignTime},#{endTime},#{closeTime},#{shippingName},#{shippingCode},#{userId},#{buyerMessage},#{buyerNick},#{buyerRate},#{created},#{updated});
+
+insert into tb_order_item (item_id,order_id,num,title,price,total_fee,pic_path)
+values 
+<foreach collection="orderItems" item="item" separator=",">
+(#{item.itemId},#{orderId},#{item.num},#{item.title},#{item.price},#{item.totalFee},#{item.picPath})</foreach>;
+
+insert into tb_order_shipping (order_id,receiver_name,receiver_phone,receiver_mobile,receiver_state,receiver_city,receiver_district,receiver_address,receiver_zip,created,updated)
+values
+(#{orderId},#{orderShipping.receiverName},#{orderShipping.receiverPhone},#{orderShipping.receiverMobile},#{orderShipping.receiverState},#{orderShipping.receiverCity},#{orderShipping.receiverDistrict},#{orderShipping.receiverAddress},#{orderShipping.receiverZip},#{orderShipping.created},#{orderShipping.updated});
+</insert>
+
+<resultMap type="Order" id="orderRM">
+<id property="orderId" column="order_id"/><!-- 主键 -->
+<!-- 1对1,1对多-->
+<association property="orderShipping" javaType="OrderShipping" 
+column="order_id" select="shippingByOrderId"></association>
+<!-- 对多关系 -->
+<collection property="orderItems" javaType="ArrayList" ofType="OrderItem" column="order_id" select="queryOrderItemList">
+</collection>
+</resultMap>
+
+<select id="queryOrder" parameterType="string" resultMap="orderRM">
+select * from tb_order where order_id=#{orderId};
+</select>
+<select id="queryOrderItemList" parameterType="string" resultType="OrderItem">
+select * from tb_order_item where order_id=#{orderId}
+</select>
+
+<select id="shippingByOrderId" parameterType="string" resultType="OrderShipping">
+select * from tb_order_shipping where order_id=#{orderId};
+</select>
+
+<update id="paymentOrder" parameterType="date">
+UPDATE tb_order SET STATUS=6,updated=now(),close_time=now(),end_time=now() 
+WHERE STATUS=1 AND payment_type=1 AND created &lt;=#{date}
+</update>
+
+</mapper>
+
+
+
+
+
+
+
+
